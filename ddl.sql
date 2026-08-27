@@ -1,4 +1,4 @@
--- DROP SCHEMA public;
+DROP SCHEMA public cascade;
 
 CREATE SCHEMA public AUTHORIZATION nazario;
 -- public.estudios definition
@@ -43,6 +43,7 @@ CREATE TABLE public.pacientes (
 	documento varchar(20) NOT NULL,
 	nombre text NOT NULL,
 	telefono varchar(20) NULL,
+	mail text not null,
 	CONSTRAINT pacientes_documento_key UNIQUE (documento),
 	CONSTRAINT pacientes_pkey PRIMARY KEY (id)
 );
@@ -251,7 +252,6 @@ CREATE TABLE public.salasxestudio (
 	CONSTRAINT salasxestudio_id_sede_id_sala_fkey FOREIGN KEY (id_sede,id_sala) REFERENCES public.salas(id_sede,id)
 );
 
-
 -- public.turnos definition
 
 -- Drop table
@@ -306,4 +306,17 @@ CREATE TABLE public.usuariosxsede (
 	CONSTRAINT usuariosxsede_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id)
 );
 
+
+create table public.disponibilidadsede (
+	id_sede uuid NOT NULL,
+	desde timestamp not null,
+	hasta timestamp not null,
+	tecnico uuid,
+	usuario_alta uuid not null,
+	check (desde < hasta),
+	foreign key (id_sede) references sedes (id),
+	foreign key (tecnico) references usuarios (id),
+	foreign key (usuario_alta) references usuarios (id),
+	primary key (id_sede, desde)
+);
 
