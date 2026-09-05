@@ -1,6 +1,10 @@
+--DROP database clinica;
+--CREATE database clinica;
+
 DROP SCHEMA public cascade;
 
-CREATE SCHEMA public AUTHORIZATION nazario;
+CREATE SCHEMA public; --AUTHORIZATION postgres;
+
 -- public.estudios definition
 
 -- Drop table
@@ -78,9 +82,15 @@ CREATE TABLE public.sedes (
 	x numeric(8, 5) NOT NULL,
 	y numeric(8, 5) NOT NULL,
 	habilitada bool DEFAULT true NOT NULL,
-	turnos_simultaneos int4 DEFAULT 1 NOT NULL,
 	CONSTRAINT sedes_codigo_key UNIQUE (codigo),
 	CONSTRAINT sedes_pkey PRIMARY KEY (id)
+);
+
+create table public.telefonos (
+	id_sede uuid not null,
+	telefono text not null,
+	foreign key (id_sede) references sedes (id),
+	primary key (id_sede, telefono)
 );
 
 
