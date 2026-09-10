@@ -36,6 +36,30 @@ CREATE TABLE public.gruposusuario (
 );
 
 
+create table tiposidentificacion (
+	codigo int not null,
+	nombre text not null,
+	primary key (codigo)
+);
+
+
+insert into tiposidentificacion values
+	(1, 'CI'),
+	(2, 'RUT');
+
+
+create table titulares (
+	id uuid default gen_random_uuid() not null,
+	tipoidentificacion int not null,
+	identificacion text not null,
+	nombre text not null,
+	telefono text not null,
+	mail text not null,
+	foreign key (tipoidentificacion) references tiposidentificacion (codigo),
+	primary key (id)
+);
+
+
 -- public.pacientes definition
 
 -- Drop table
@@ -43,12 +67,8 @@ CREATE TABLE public.gruposusuario (
 -- DROP TABLE public.pacientes;
 
 CREATE TABLE public.pacientes (
-	id uuid DEFAULT gen_random_uuid() NOT NULL,
-	documento varchar(20) NOT NULL,
-	nombre text NOT NULL,
-	telefono varchar(20) NULL,
-	mail text not null,
-	CONSTRAINT pacientes_documento_key UNIQUE (documento),
+	id uuid NOT NULL,
+	foreign key (id) references titulares (id),
 	CONSTRAINT pacientes_pkey PRIMARY KEY (id)
 );
 
@@ -60,10 +80,8 @@ CREATE TABLE public.pacientes (
 -- DROP TABLE public.profesionales;
 
 CREATE TABLE public.profesionales (
-	id uuid DEFAULT gen_random_uuid() NOT NULL,
-	nombre text NOT NULL,
-	mail text NOT NULL,
-	rut varchar(12) NULL,
+	id uuid NOT NULL,
+	foreign key (id) references titulares (id),
 	CONSTRAINT profesionales_pkey PRIMARY KEY (id)
 );
 
@@ -91,6 +109,13 @@ create table public.telefonos (
 	telefono text not null,
 	foreign key (id_sede) references sedes (id),
 	primary key (id_sede, telefono)
+);
+
+create table public.mails (
+	id_sede uuid not null,
+	mail text not null,
+	foreign key (id_sede) references sedes (id),
+	primary key (id_sede, mail)
 );
 
 
@@ -124,6 +149,7 @@ CREATE TABLE public.atributoscheckbox (
 	id uuid DEFAULT gen_random_uuid() NOT NULL,
 	nombre text NOT NULL,
 	tiempo_extra interval NOT NULL,
+	precio numeric(14, 2) not null,
 	CONSTRAINT atributoscheckbox_pkey PRIMARY KEY (id_estudio, id),
 	CONSTRAINT atributoscheckbox_id_estudio_fkey FOREIGN KEY (id_estudio) REFERENCES public.estudios(id)
 );
@@ -259,7 +285,7 @@ CREATE TABLE public.salasxestudio (
 	id_estudio uuid NOT NULL,
 	CONSTRAINT salasxestudio_pkey PRIMARY KEY (id_sede, id_estudio, id_sala),
 	CONSTRAINT salasxestudio_id_estudio_fkey FOREIGN KEY (id_estudio) REFERENCES public.estudios(id),
-	CONSTRAINT salasxestudio_id_sede_id_sala_fkey FOREIGN KEY (id_sede,id_sala) REFERENCES public.salas(id_sede,id)
+	CONSTRAINT salasxestudio_id_sede_id_sala_fkey FOREIGN KEY (id_sede,id_sala) REFERENCES public.salas(id_sede, id)
 );
 
 -- public.turnos definition
@@ -267,6 +293,34 @@ CREATE TABLE public.salasxestudio (
 -- Drop table
 
 -- DROP TABLE public.turnos;
+
+create table ordenes (
+	id uuid DEFAULT gen_random_uuid() NOT null,
+	id_profesional uuid not null,
+	id_paciente uuid not null,
+	usuario_alta uuid not null,
+	usuario_mod uuid not null,
+	foreign key (id_profesional) references profesionales (id),
+	foreign key (id_paciente) references pacientes (id),
+	primary key (id)
+);
+
+create table estudiosxorden (
+	id_orden uuid not null,
+	id_estudio uuid not null,
+	foreign key (id_orden) references ordenes (id),
+	foreign key (id_estudio) references estudios (id),
+	primary key (id_orden, id_estudio)
+);
+
+create table atributoscheckxorden (
+	id_orden uuid not null,
+	id_estudio uuid not null,
+	id_atributo uuid not null,
+	valor boolean not null,
+	foreign key (id_orden, id_estudio) references estudiosxorden (id_orden, id_estudio),
+	foreign key (id_estudio, id_atributo) references atributoscheckbox (id_estudio, id)
+);
 
 CREATE TABLE public.turnos (
 	id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -276,13 +330,11 @@ CREATE TABLE public.turnos (
 	duracion interval NOT NULL,
 	estudio uuid NOT NULL,
 	precio numeric(14, 2) NOT NULL,
-	id_paciente uuid NOT NULL,
-	id_profesional uuid NULL,
+	id_orden uuid not null,
 	usuario_alta uuid NOT NULL,
 	usuario_mod uuid NOT NULL,
 	CONSTRAINT turnos_pkey PRIMARY KEY (id),
-	CONSTRAINT turnos_id_paciente_fkey FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id),
-	CONSTRAINT turnos_id_profesional_fkey FOREIGN KEY (id_profesional) REFERENCES public.profesionales(id),
+	FOREIGN KEY (id_orden) REFERENCES public.ordenes(id),
 	CONSTRAINT turnos_id_sede_id_sala_fkey FOREIGN KEY (id_sede,id_sala) REFERENCES public.salas(id_sede,id)
 );
 
@@ -315,18 +367,3 @@ CREATE TABLE public.usuariosxsede (
 	CONSTRAINT usuariosxsede_id_sede_fkey FOREIGN KEY (id_sede) REFERENCES public.sedes(id),
 	CONSTRAINT usuariosxsede_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id)
 );
-
-
-create table public.disponibilidadsede (
-	id_sede uuid NOT NULL,
-	desde timestamp not null,
-	hasta timestamp not null,
-	tecnico uuid,
-	usuario_alta uuid not null,
-	check (desde < hasta),
-	foreign key (id_sede) references sedes (id),
-	foreign key (tecnico) references usuarios (id),
-	foreign key (usuario_alta) references usuarios (id),
-	primary key (id_sede, desde)
-);
-
